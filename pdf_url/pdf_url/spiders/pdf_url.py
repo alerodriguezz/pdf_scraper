@@ -21,4 +21,6 @@ class PdfUrlSpider(CrawlSpider):
     rules =[Rule(LinkExtractor(allow=''), callback='parse_httpresponse', follow=True)]
 
     def parse_httpresponse(self, response):
+        
+        
         return
