@@ -1,5 +1,5 @@
 import scrapy
-
+import re 
 from pdf_url.items import PdfUrlItem
 from scrapy.spiders import CrawlSpider, Rule
 from scrapy.linkextractors import LinkExtractor
@@ -22,20 +22,34 @@ class PdfUrlSpider(CrawlSpider):
     rules =[Rule(LinkExtractor(allow=''), callback='parse_httpresponse', follow=True)]
 
     def parse_httpresponse(self, response):
-        
-        print (response)
+
+        if response.status!= 200:
+            return None 
 
         item = PdfUrlItem()
         #check if the link is a pdf
-        if 'Content-Type' in response.headers.keys():
+        if b'Content-Type' in response.headers.keys():
             links_to_pdf = 'application/pdf' in str(response.headers['Content-Type'])
-            print(links_to_pdf)
         else: 
             return None
         #yes? scrape it 
 
+        #check is content disposition element exists 
+        content_disposition_exists = b'Content-Disposition' in response.headers.keys()
+
+        if links_to_pdf:
+            if content_disposition_exists:
+                item['url']= response.url
+                item['filename']= re.search('filename="(.+)"', str(response.headers['Content-Disposition'])).group(1)
+            else:
+                #scrape specified data(refernenced in items.py)
+                item['url'] = response.url
+                item['filename'] = response.url.split('/')[-1]
         #no? ignore it and proceed 
+        else:
+            return None 
 
         #write data to csv
-
-        return
+        print ("wrote...."+ item['filename']+"...to urls.csv")
+        print()
+        return item
